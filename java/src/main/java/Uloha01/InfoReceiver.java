@@ -35,8 +35,10 @@ public class InfoReceiver {
 
                     System.out.println(sb.toString());
                 } catch (SocketException e) {
+                    System.out.println(paket.getAddress() + ":");
                     e.printStackTrace();
                 } catch (IOException e) {
+                    System.out.println(paket.getAddress() + ":");
                     e.printStackTrace();
                 }
             }
