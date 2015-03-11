@@ -27,6 +27,7 @@ public class InfoSender {
         try {
             DatagramSocket soket = new DatagramSocket();
             while (true) {
+                System.out.println("Sending files: " + subory.size());
                 for (int i = 0; i < subory.size(); i++) {
                     File subor = subory.get(i);
 

@@ -13,30 +13,34 @@ public class InfoReceiver {
             DatagramSocket soket = new DatagramSocket(InfoSender.INFO_RECEIVER_PORT);
             DatagramPacket paket = null;
             while (true) {
-                byte[] buf = new byte[soket.getReceiveBufferSize()];
-                paket = new DatagramPacket(buf, buf.length);
-                soket.receive(paket);
-                buf = paket.getData();
+                try {
+                    byte[] buf = new byte[soket.getReceiveBufferSize()];
+                    paket = new DatagramPacket(buf, buf.length);
+                    soket.receive(paket);
+                    buf = paket.getData();
 
-                ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-                ObjectInputStream ois = new ObjectInputStream(bais);
+                    ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+                    ObjectInputStream ois = new ObjectInputStream(bais);
 
-                long fileSize = ois.readLong();
-                String fileName = ois.readUTF();
-                int fileSenderPort = ois.readInt();
-                int fileReceiverPort = ois.readInt();
+                    long fileSize = ois.readLong();
+                    String fileName = ois.readUTF();
+                    int fileSenderPort = ois.readInt();
+                    int fileReceiverPort = ois.readInt();
 
-                StringBuilder sb = new StringBuilder();
-                sb.append(paket.getAddress() + ":");
-                sb.append(fileName + " (" + fileSize + ") ");
-                sb.append(fileSenderPort + " ");
-                sb.append(fileReceiverPort);
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(paket.getAddress() + ":");
+                    sb.append(fileName + " (" + fileSize + ") ");
+                    sb.append(fileSenderPort + " ");
+                    sb.append(fileReceiverPort);
 
-                System.out.println(sb.toString());
+                    System.out.println(sb.toString());
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         } catch (SocketException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
             e.printStackTrace();
         }
     }
