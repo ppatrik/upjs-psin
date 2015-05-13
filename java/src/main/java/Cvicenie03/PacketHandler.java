@@ -15,7 +15,7 @@ public class PacketHandler implements PcapPacketHandler<String> {
         Arp arp = new Arp();
 
         if (packet.hasHeader(arp)) {
-            if (arp.operation() == Arp.OpCode.REQUEST) {
+            /*if (arp.operation() == Arp.OpCode.REQUEST) {
                 if (!mojaArp.containsKey(JnetpcapUtilities.getIPFromBytes(arp.tpa()))) {
                     mojaArp.put(JnetpcapUtilities.getIPFromBytes(arp.tpa()), JnetpcapUtilities.getMacFromBytes(arp.tha()));
                     System.out.println("len novy zapis");
@@ -34,7 +34,7 @@ public class PacketHandler implements PcapPacketHandler<String> {
                         JnetpcapUtilities.getMacFromBytes(arp.tha()),
                         JnetpcapUtilities.getIPFromBytes(arp.tpa())
                 );
-            }
+            }*/
         }
     }
 }

@@ -83,7 +83,7 @@ public class Pinger {
             System.out.printf("#%d: %s [%s] %s\n", i++, device.getName(), description, device.toString());
         }
 
-        PcapIf device = alldevs.get(1); // We know we have atleast 1 device
+        PcapIf device = alldevs.get(6); // We know we have atleast 1 device
         System.out
                 .printf("\nChoosing '%s' on your behalf:\n",
                         (device.getDescription() != null) ? device.getDescription()
