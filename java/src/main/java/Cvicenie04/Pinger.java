@@ -165,6 +165,9 @@ public class Pinger {
             }
         }
 
+        pcap.breakloop();
+        executorService.shutdown();
+
         pcap.close();
     }
 }
