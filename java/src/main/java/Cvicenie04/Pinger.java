@@ -2,24 +2,64 @@ package Cvicenie04;
 
 import Cvicenie03.*;
 import org.jnetpcap.Pcap;
+import org.jnetpcap.PcapAddr;
 import org.jnetpcap.PcapIf;
+import org.jnetpcap.PcapSockAddr;
 import org.jnetpcap.packet.JPacket;
 import org.jnetpcap.packet.PcapPacket;
 import org.jnetpcap.packet.PcapPacketHandler;
+import org.jnetpcap.protocol.lan.Ethernet;
 import org.jnetpcap.protocol.network.Icmp;
+import org.jnetpcap.protocol.network.Ip4;
 
+import javax.sound.midi.Soundbank;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
 public class Pinger {
 
+
+    public static String dstIp = "8.8.8.8";
+
+    private static byte[] getRouterMac(BlockingQueue<PcapPacket> radPaketov) {
+        try {
+            String ipSkNic = JnetpcapUtilities.getIPFromBytes(InetAddress.getByName("www.sk-nic.sk").getAddress());
+            URL url = new URL("http://www.sk-nic.sk/");
+            InputStream is = url.openStream();
+            is.close();
+            while (true) {
+                PcapPacket paket = radPaketov.take();
+                Ip4 ip4 = new Ip4();
+                if(paket.hasHeader(ip4)) {
+                    if(ipSkNic.equals(JnetpcapUtilities.getIPFromBytes(ip4.destination()))) {
+                        // cielova IP je rovnaka ako ipSkNic-u
+                        Ethernet ethernet = paket.getHeader(new Ethernet());
+                        return ethernet.destination();
+                    }
+                }
+            }
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     /**
      * Main startup method
      *
      * @param args ignored
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InterruptedException {
         List<PcapIf> alldevs = new ArrayList<PcapIf>(); // Will be filled with NICs
         StringBuilder errbuf = new StringBuilder(); // For any error msgs
 
@@ -79,10 +119,26 @@ public class Pinger {
             }
         });
 
+        byte[] myMac = device.getHardwareAddress();
+        String srcMac = JnetpcapUtilities.getMacFromBytes(myMac);
+        System.out.println("Moja mac: " + srcMac);
+
+        byte[] myIp = null;
+        List<PcapAddr> adresy = device.getAddresses();
+        for (PcapAddr adresa : adresy) {
+            if (adresa.getAddr().getFamily() == PcapSockAddr.AF_INET) {
+                myIp = adresa.getAddr().getData();
+            }
+        }
+        String srcIp = JnetpcapUtilities.getIPFromBytes(myIp);
+        System.out.println("Moja ip: " + srcIp);
+
+        String dstMac = JnetpcapUtilities.getMacFromBytes(getRouterMac(radPaketov));
+
 
         for (int j = 0; j < 4; j++) {
-            int icmpId = (int)(Math.random()*65536);
-            int idIP = (int)(Math.random()*65536);
+            int icmpId = (int) (Math.random() * 65536);
+            int idIP = (int) (Math.random() * 65536);
             JPacket sendPacket = JnetpcapUtilities.getICMPPaket(
                     srcMac,
                     dstMac,
@@ -98,17 +154,13 @@ public class Pinger {
             pcap.sendPacket(sendPacket);
             long startTime = System.nanoTime();
             while (System.nanoTime() - startTime < 1000000000L) { // ze chodia somariny
-                try {
-                    PcapPacket receivePacket = radPaketov.poll(1, TimeUnit.SECONDS); // ze nic nechodi
-                    if (receivePacket == null) {
-                        break;
-                    }
-                    Icmp icmp = new Icmp();
-                    if (receivePacket.hasHeader(icmp)) {
-                        System.out.println("prislo ICMP po case " + (System.nanoTime() - startTime) / 1000000.0 + " ms");
-                    }
-                } catch (InterruptedException e) {
-
+                PcapPacket receivePacket = radPaketov.poll(1, TimeUnit.SECONDS); // ze nic nechodi
+                if (receivePacket == null) {
+                    break;
+                }
+                Icmp icmp = new Icmp();
+                if (receivePacket.hasHeader(icmp)) {
+                    System.out.println("prislo ICMP po case " + (System.nanoTime() - startTime) / 1000000.0 + " ms");
                 }
             }
         }
