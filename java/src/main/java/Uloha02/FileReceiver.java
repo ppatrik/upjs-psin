@@ -61,13 +61,12 @@ public class FileReceiver implements Runnable {
         return result;
     }
 
-    @Override
     public void run() {
         RandomAccessFile raf = null;
         DatagramSocket soket;
         DatagramPacket paket;
         try {
-            raf = new RandomAccessFile(subor, "w");
+            raf = new RandomAccessFile(subor, "rw");
             raf.setLength(velkostSuboru);
             SortedSet<Long> chybajuceOffsety = new TreeSet<Long>();
 
@@ -124,8 +123,14 @@ public class FileReceiver implements Runnable {
                     oos.flush();
                     oos.close();
                     byte[] sprava = baos.toByteArray();
-                    DatagramPacket poziadavka = new DatagramPacket(sprava, sprava.length);
+                    DatagramPacket poziadavka = new DatagramPacket(
+                            sprava,
+                            sprava.length,
+                            adresaSender,
+                            portSendera
+                    );
                     soket.send(poziadavka);
+                    System.out.println("Poslana poziadavka na vsetky party");
                 }
             }
         } catch (FileNotFoundException e) {

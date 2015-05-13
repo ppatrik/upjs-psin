@@ -1,5 +1,7 @@
 package Uloha02;
 
+import Uloha02.Forms.Client;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -15,78 +17,78 @@ import java.util.concurrent.Executors;
 
 public class InfoReceiver {
     public static void main(String[] args) {
-        try {
-            DatagramSocket soket = new DatagramSocket(InfoSender.INFO_RECEIVER_PORT);
-            DatagramPacket paket = null;
-            Set<FileReceiver> stahovace = new HashSet<FileReceiver>();
+        final Client clientForm = new Client();
 
-            long cas = System.currentTimeMillis();
+        // spustime okienko
+        new Thread(clientForm).start();
 
-            while (true) {
+        // spustene hladania suborov na sieti
+        new Thread(new Runnable() {
+            public void run() {
                 try {
-                    byte[] buf = new byte[soket.getReceiveBufferSize()];
-                    paket = new DatagramPacket(buf, buf.length);
-                    soket.receive(paket);
-                    buf = paket.getData();
+                    DatagramSocket soket = new DatagramSocket(InfoSender.INFO_RECEIVER_PORT);
+                    DatagramPacket paket = null;
 
-                    ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-                    ObjectInputStream ois = new ObjectInputStream(bais);
+                    while (true) {
+                        try {
+                            byte[] buf = new byte[soket.getReceiveBufferSize()];
+                            paket = new DatagramPacket(buf, buf.length);
+                            soket.receive(paket);
+                            buf = paket.getData();
 
-                    long fileSize = ois.readLong();
-                    String fileName = ois.readUTF();
-                    int fileSenderPort = ois.readInt();
-                    int fileReceiverPort = ois.readInt();
+                            ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+                            ObjectInputStream ois = new ObjectInputStream(bais);
 
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(paket.getAddress()).append(":");
-                    sb.append(fileName).append(" (").append(fileSize).append(") ");
-                    sb.append(fileSenderPort).append(" ");
-                    sb.append(fileReceiverPort);
+                            long fileSize = ois.readLong();
+                            String fileName = ois.readUTF();
+                            int fileSenderPort = ois.readInt();
+                            int fileReceiverPort = ois.readInt();
 
-                    System.out.println(sb.toString());
+                            StringBuilder sb = new StringBuilder();
+                            sb.append(paket.getAddress()).append(":");
+                            sb.append(fileName).append(" (").append(fileSize).append(") ");
+                            sb.append(fileSenderPort).append(" ");
+                            sb.append(fileReceiverPort);
 
-                    FileReceiver stahovac = new FileReceiver(
-                            paket.getAddress(),
-                            fileSenderPort,
-                            fileReceiverPort,
-                            new File(fileName),
-                            fileSize
-                    );
-                    stahovace.add(stahovac);
-
-                    if (System.currentTimeMillis() - cas > 5000) {
-                        System.out.println("Cakal som viac ako 5s ta koncim!");
-                        break;
+                            FileReceiver stahovac = new FileReceiver(
+                                    paket.getAddress(),
+                                    fileSenderPort,
+                                    fileReceiverPort,
+                                    new File("income/" + fileName),
+                                    fileSize
+                            );
+                            clientForm.addStahovac(stahovac);
+                        } catch (SocketException e) {
+                            System.out.println(paket.getAddress() + ":");
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            System.out.println(paket.getAddress() + ":");
+                            e.printStackTrace();
+                        }
                     }
-
                 } catch (SocketException e) {
-                    System.out.println(paket.getAddress() + ":");
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    System.out.println(paket.getAddress() + ":");
                     e.printStackTrace();
                 }
             }
 
-            int i = 1;
-            for (FileReceiver fr : stahovace) {
-                System.out.println(i + ": " + fr);
-                i++;
-            }
-            Scanner citac = new Scanner(System.in);
-            System.out.print("Ktory subor chces stahovat: ");
-            int volba = citac.nextInt();
-            i = 1;
-            for (FileReceiver fr : stahovace) {
-                if(volba==i) {
-                    System.out.println("idem stahovat " + i);
-                    ExecutorService spustac = Executors.newCachedThreadPool();
-                    spustac.execute(fr);
-                }
-                i++;
-            }
-        } catch (SocketException e) {
-            e.printStackTrace();
+        }).start();
+
+        /*int i = 1;
+        for (FileReceiver fr : stahovace) {
+            System.out.println(i + ": " + fr);
+            i++;
         }
+        Scanner citac = new Scanner(System.in);
+        System.out.print("Ktory subor chces stahovat: ");
+        int volba = citac.nextInt();
+        i = 1;
+        for (FileReceiver fr : stahovace) {
+            if(volba==i) {
+                System.out.println("idem stahovat " + i);
+                ExecutorService spustac = Executors.newCachedThreadPool();
+                spustac.execute(fr);
+            }
+            i++;
+        }*/
     }
 }

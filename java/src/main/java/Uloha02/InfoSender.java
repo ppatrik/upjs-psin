@@ -1,5 +1,7 @@
 package Uloha02;
 
+import Uloha02.Forms.Server;
+
 import javax.swing.*;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -15,7 +17,7 @@ public class InfoSender {
     public static final int FILE_SENDER_BASE_PORT = 15000;
     public static final int FILE_RECEIVER_BASE_PORT = 20000;
 
-    private List<File> subory = new ArrayList<File>();
+    private List<FileSender> odosielace = new ArrayList<FileSender>();
 
     public static void main(String[] args) {
         InfoSender infoSender = new InfoSender();
@@ -23,21 +25,30 @@ public class InfoSender {
         infoSender.posielajInformacie();
     }
 
+    private Server serverForm;
+
+    public InfoSender() {
+        serverForm = new Server();
+        serverForm.parent = this;
+        new Thread(serverForm).run();
+    }
+
     private void posielajInformacie() {
         try {
             DatagramSocket soket = new DatagramSocket();
             while (true) {
-                System.out.println("Sending files: " + subory.size());
-                for (int i = 0; i < subory.size(); i++) {
-                    File subor = subory.get(i);
+                serverForm.println("Sending files: " + odosielace.size());
+                serverForm.setSendingFiles(odosielace.size());
+                for (int i = 0; i < odosielace.size(); i++) {
+                    File subor = odosielace.get(i).getSubor();
 
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     ObjectOutputStream oos = new ObjectOutputStream(baos);
 
                     oos.writeLong(subor.length());
                     oos.writeUTF(subor.getName());
-                    oos.writeInt(FILE_SENDER_BASE_PORT + i);
-                    oos.writeInt(FILE_RECEIVER_BASE_PORT + i);
+                    oos.writeInt(odosielace.get(i).getSenderPort());
+                    oos.writeInt(odosielace.get(i).getManagementPort());
                     oos.flush();
 
                     oos.close();
@@ -63,13 +74,24 @@ public class InfoSender {
         }
     }
 
-    private void pridajSubory() {
+    public int nextIndex = 0;
+
+    public void pridajSubory() {
         while (true) {
             JFileChooser chooser = new JFileChooser();
             int coSaStalo = chooser.showDialog(null, "zdieľaj");
             if (coSaStalo == JFileChooser.APPROVE_OPTION) {
                 File subor = chooser.getSelectedFile();
-                subory.add(subor);
+                FileSender odosielac = new FileSender(
+                        FILE_RECEIVER_BASE_PORT + nextIndex,
+                        FILE_SENDER_BASE_PORT + nextIndex,
+                        subor,
+                        subor.length(),
+                        serverForm
+                );
+                odosielace.add(odosielac);
+                nextIndex++;
+                serverForm.println("Pridany subor: " + subor.getName());
             } else {
                 break;
             }
