@@ -1,11 +1,9 @@
-package Cvicenie03;
+package Uloha03_1.Cvicenie03;
 
-import com.sun.org.apache.xpath.internal.SourceTree;
 import org.jnetpcap.packet.PcapPacket;
 import org.jnetpcap.packet.PcapPacketHandler;
 import org.jnetpcap.protocol.network.Arp;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,8 +24,9 @@ public class PacketHandler implements PcapPacketHandler<String> {
                 this.time = System.nanoTime();
                 return true;
             } else {
-                if (System.nanoTime() - 60 * 100 * 1000 < this.time) {
+                if (System.nanoTime() - 60 * 100 * 1000 * 1000000.0 < this.time) {
                     this.time = System.nanoTime();
+                    this.mac = mac;
                     return false;
                 } else {
                     this.time = System.nanoTime();
@@ -72,6 +71,7 @@ public class PacketHandler implements PcapPacketHandler<String> {
                         targetIp
                 );*/
 
+                // TODO: Mohli by sme ignorovat pripady ked IP adresa je 0.0.0.0
                 if (!mojaArp.containsKey(senderIp)) {
                     // Vytvorenie noveho nasho zaznamu arp
                     ArpZapis arpZapis = new ArpZapis(senderMac, senderIp);
@@ -81,13 +81,12 @@ public class PacketHandler implements PcapPacketHandler<String> {
                     // ip uz existuje
                     ArpZapis arpZapis = mojaArp.get(senderIp);
                     if (arpZapis.set(senderMac, senderIp)) {
-                        // bolo to len "osviežene"
+                        // ArpZapis bol len "osvieženy"
                         //System.out.println("Prisiel ARP - rovnaky ako pred <60s");
-
                     } else {
                         // mac adresa pre danu IP bola zmenena
                         System.out.println("");
-                        System.err.println("Prisla zla mac adresa " + targetMac + " pre " + targetIp + "! <60s");
+                        System.err.println("Prisla zla mac adresa " + senderMac + " pre " + senderIp + "! <60s");
                     }
                 }
                 System.out.println(mojaArp);

@@ -25,12 +25,12 @@ import java.util.concurrent.*;
 public class Pinger {
 
 
-    public static String dstIp = "8.8.8.8";
+    public static String dstIp = "192.168.12.1";
 
     private static byte[] getRouterMac(BlockingQueue<PcapPacket> radPaketov) {
         try {
-            String ipSkNic = JnetpcapUtilities.getIPFromBytes(InetAddress.getByName("www.sk-nic.sk").getAddress());
-            URL url = new URL("http://www.sk-nic.sk/");
+            String ipSkNic = JnetpcapUtilities.getIPFromBytes(InetAddress.getByName("localhost").getAddress());
+            URL url = new URL("http://localhost/");
             InputStream is = url.openStream();
             is.close();
             while (true) {
@@ -160,7 +160,14 @@ public class Pinger {
                 }
                 Icmp icmp = new Icmp();
                 if (receivePacket.hasHeader(icmp)) {
-                    System.out.println("prislo ICMP po case " + (System.nanoTime() - startTime) / 1000000.0 + " ms");
+                    int type = icmp.getByte(0);
+                    int code = icmp.getByte(1);
+                    int id = icmp.getByte(5);
+                    int seq = icmp.getByte(7);
+                    System.out.println("prislo type: "+type+" code: "+code+" id: "+id +" seq: " + seq + " time: " + (System.nanoTime() - startTime) / 1000000.0 + " ms");
+                    if(type == 0 && code == 0 && id == icmpId && seq == j) {
+                        System.out.println("prislo ICMP po case " + (System.nanoTime() - startTime) / 1000000.0 + " ms");
+                    }
                 }
             }
         }
